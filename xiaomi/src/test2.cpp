@@ -19,32 +19,61 @@ struct Node {
 };
 
 Node* convert(Node* node) {
-  stack<Node*> s;
+  stack<tuple<int, Node*>> s;
+  Node* ans = nullptr;
+  Node* prev =
+      nullptr;  // 前继指针，指向前一次输出的节点，它的右指向当前输出的节点，当前节点的左指向前继节点
   auto p = node;
-  while (p or s.empty()) {
+  while (p or not s.empty()) {
     if (p) {
-      s.push(p);
+      s.push(make_tuple(0, p));  // first access
       p = p->left;
     } else {
-      p = s.top();
-      cout << p->data << ' ';
-      s.pop();
+      auto& tmp = s.top();
+      p = get<1>(tmp);
+      get<0>(tmp)++;
+      if (get<0>(tmp) == 1) {  // second access
+        if (ans == nullptr) {
+          ans = p;
+        }
+
+        if (prev != nullptr) {
+          prev->right = p;
+        }
+        p->left = prev;
+        prev = p;
+      } else if (get<0>(tmp) == 2) {  // third access
+        p = nullptr;
+        s.pop();
+      }
+      if (p) p = p->right;
     }
   }
-  return node;
+  return ans;
 }
 
+/**
+ * @brief 测试用例：10 6 14 4 8 12 16 -1 5 7 -1 -1 -1 -1 -1 -1 -1 -1 -1
+ * 输入层次遍历序，输出双向链表
+ */
 int main(int argc, char** argv) {
   int n;
   Node* root = nullptr;
   std::queue<Node*> queue;
   bool left = true;
   while (cin >> n) {
-    if (n == -1) break;
     if (root == nullptr) {
       root = new Node(n);
       queue.push(root);
     } else {
+      if (n == -1) {
+        if (!left) {
+          queue.pop();
+          if (queue.empty()) break;
+        }
+        left = !left;
+        continue;
+      }
       if (left) {
         auto node = new Node(n);
         queue.front()->left = node;
